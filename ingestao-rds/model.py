@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # environment variables
-load_dotenv(os.getenv("PWD")+"/env.dev")
+load_dotenv(str(os.getenv("PWD"))+"/env.dev")
 
 DB_DRIVER = os.getenv("DB_DRIVER")
 DB_USER = os.getenv("DB_USER")
