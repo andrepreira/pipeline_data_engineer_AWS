@@ -9,7 +9,7 @@ from requests import Session
 from sqlalchemy.ext.declarative import declarative_base
 
 # environment variables
-load_dotenv(os.getenv("PWD")+"/env.dev")
+load_dotenv(str(os.getenv("PWD"))+"/env.dev")
 
 COINMARKETCAP_KEY = os.getenv("COINMARKETCAP_KEY")
 URI_COINMARKETCAP = os.getenv("URI_COINMARKETCAP")
