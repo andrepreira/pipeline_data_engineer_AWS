@@ -37,7 +37,7 @@ class Coins(Base):
     percent_change_24h = Column(Float)
     percent_change_7d = Column(Float)
     
-    def start():
+    def conn_engine():
         #postgres://{user}:{password}@{host}:{port}/{db_name}?sslmode=require
         db_string = "{driver}://{user}:{password}@{host}:{port}/{db_name}".format(
             driver = DB_DRIVER,
@@ -47,7 +47,10 @@ class Coins(Base):
             port = DB_PORT, 
             db_name = DB_TABLE_NAME
         ) 
-        engine = create_engine(db_string)
+        return create_engine(db_string)
+    
+    def start():
+        engine = Coins.conn_engine()
         Session = sessionmaker(engine)
         session = Session()
         Base.metadata.create_all(engine)

@@ -11,20 +11,26 @@ RAW_DATA_BUCKET = os.getenv("RAW_DATA_BUCKET")
 PROCESSED_DATA_BUCKET = os.getenv("PROCESSED_DATA_BUCKET")
 CURATED_DATA_BUCKET = os.getenv("CURATED_DATA_BUCKET")
 
+REDSHIFT_USER = os.getenv("REDSHIFT_USER")
+REDSHIFT_PASSWORD = os.getenv("REDSHIFT_PASSWORD")
+
+# Setup de aplicação spark
 spark = SparkSession \
         .builder \
-        .appName("SparkApp") \
-        .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2") \
-        .config("spark.hadoop.fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE") \
+        .appName("job-1-spark") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
         .getOrCreate()
 
+# logging level for spark [ ERROR, INFO]. Use INFO for dev
 spark.sparkContext.setLogLevel("ERROR")
 
-def read_csv(bucket, key):
+def read_csv(bucket, path):
+    # Read data from Data Lake
     df = spark.read.format("csv") \
-        .option("header", "true") \
-        .option("inferSchema", "true") \
-        .csv(f"s3a://{bucket}/{key}")
+        .option("header", "True") \
+        .option("inferSchema", "True") \
+        .csv(f"s3a://{bucket}/{path}")
     print("\nImprime os dados lidos da raw:")
     print(df.show(5))
     print("\nImprime o schema do dataframe lido da raw:")
@@ -39,7 +45,6 @@ def read_delta(bucket, path):
 def write_processed(bucket, path, col_partition, data_format, mode):
     print(f"\nEscrevendo os dados lidso na raw para delta na processing zone..")
     try:
-        df = read_csv(bucket, path)
         df.write.format(data_format) \
             .partitionBy(col_partition) \
             .mode(mode) \
@@ -67,9 +72,9 @@ def write_redshifit(url_jdbc, table_name, dataframe):
         dataframe.write.format("jdbc") \
             .options(
                     url_jdbc=url_jdbc,
-                    driver="com.mysql.cj.jdbc.Driver",
-                    user="root",
-                    password="", 
+                    driver="com.amazon.redshift.jdbc42.Driver",
+                    user=REDSHIFT_USER,
+                    password=REDSHIFT_PASSWORD, 
                     table=table_name
             ) \
             .mode('overwrite') \
@@ -112,7 +117,7 @@ write_processed(f's3a://{PROCESSED_DATA_BUCKET}', 'tb_coins', "year", "delta", "
 df = read_delta(f's3a://{PROCESSED_DATA_BUCKET}', 'tb_coins')
 
 flag_write_redshift = True
-url_jdbc = "jdbc:mysql://localhost:3306/crypto_"
+url_jdbc = "jdbc:redshift://redshift-cluster-1.cufcxu0ztur8.us-east-1.redshift.amazonaws.com:5439/dev"
 analytics_tables(F"s3a://{CURATED_DATA_BUCKET}",df,"tb_coins",flag_write_redshift,url_jdbc)
 
 spark.stop()
