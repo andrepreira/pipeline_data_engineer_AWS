@@ -1,0 +1,4 @@
+.venv/
+.env
+.env.dev.aws
+.env.dev.gcp
